@@ -1,6 +1,7 @@
 import { loadPyodide } from "npm:pyodide/pyodide.mjs";
+import pythonCode from "./main.py" with { type: "text" };
 
-async function executeCode() {
+async function executeCode(exchangeName: string) {
   // Install ccxt dependencies
   const pyodide = await loadPyodide({
     packages: ["numpy", "micropip", "cryptography", "requests", "ssl", "aiohttp"],
@@ -12,69 +13,10 @@ async function executeCode() {
     await micropip.install("ccxt", deps=False)
   `);
 
-  // Try to use ccxt
-  const result = await pyodide.runPythonAsync(`
-    import json
-    import time
-    import asyncio
-    
-    async def _fetch_ohlcv_async(exchange_name, symbol, timeframe, limit, async_ccxt=False):
-      """
-      Fetch OHLCV data for a single symbol from an exchange.
-      
-      Args:
-          exchange_name: Name of the exchange (e.g., 'binance', 'coinbase')
-          symbol: Trading pair symbol (e.g., 'BTC/USDT')
-          timeframe: Timeframe for the data (e.g., '1h', '1d')
-          limit: Number of candles to fetch
-      
-      Returns:
-          JSON string containing timing result
-      """
+  // Set the exchange name as a global variable in Python
+  pyodide.globals.set("exchange_name", exchangeName);
 
-      if async_ccxt:
-        import ccxt.async_support as ccxt
-      else:
-        import ccxt
-
-      try:
-          # Initialize the exchange
-          exchange_class = getattr(ccxt, exchange_name.lower())
-          exchange = exchange_class({
-              'enableRateLimit': True,
-          })
-          
-          # Measure time for fetch_ohlcv
-          start_time = time.time()
-          if async_ccxt:
-              await exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
-          else:
-              exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
-          end_time = time.time()
-          
-          # Calculate elapsed time
-          elapsed_time = end_time - start_time
-          
-          # Return timing result
-          result = {
-              f'{timeframe} elapsed time': elapsed_time
-          }
-          
-          return json.dumps(result)
-      except Exception as e:
-          error_msg = f"Error fetching OHLCV: {str(e)}"
-          print(error_msg)
-          raise Exception(error_msg)
-      
-    async def _fetch_ohlcv_async_all(exchange_name, symbol, limit, async_ccxt=False):
-      return await asyncio.gather(
-          _fetch_ohlcv_async(exchange_name, symbol, "1h", limit, async_ccxt), 
-          _fetch_ohlcv_async(exchange_name, symbol, "4h", limit, async_ccxt), 
-          _fetch_ohlcv_async(exchange_name, symbol, "1d", limit, async_ccxt)
-      )
-
-    json.dumps(asyncio.run(_fetch_ohlcv_async_all("kucoin", "BTC/USDT", 100, False),debug=False))
-  `);
+  const result = await pyodide.runPythonAsync(pythonCode);
 
   return result;
 }
@@ -83,10 +25,19 @@ async function executeCode() {
 async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
   
-  // Only handle GET requests on "/"
-  if (req.method === "GET" && url.pathname === "/") {
+  // Only handle GET requests
+  if (req.method === "GET") {
+    // Extract exchange name from path: "/" or "/{exchange_name}"
+    // Default to "kucoin" if path is "/"
+    let exchangeName = "kucoin";
+    const pathParts = url.pathname.split("/").filter(part => part.length > 0);
+    
+    if (pathParts.length > 0) {
+      exchangeName = pathParts[0].toLowerCase();
+    }
+    
     try {
-      const result = await executeCode();
+      const result = await executeCode(exchangeName);
       return new Response(result, {
         headers: { "Content-Type": "text/plain" },
       });
@@ -99,7 +50,7 @@ async function handler(req: Request): Promise<Response> {
     }
   }
   
-  // Return 404 for other paths
+  // Return 404 for other methods
   return new Response("Not Found", { status: 404 });
 }
 
