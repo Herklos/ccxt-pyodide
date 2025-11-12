@@ -72,7 +72,7 @@ const result = await pyodide.runPythonAsync(`
         _fetch_ohlcv_async(exchange_name, symbol, "1d", limit, async_ccxt)
     )
 
-  json.dumps(asyncio.run(_fetch_ohlcv_async_all("binance", "BTC/USDT", 100, False),debug=False))
+  json.dumps(asyncio.run(_fetch_ohlcv_async_all("kucoin", "BTC/USDT", 100, False),debug=False))
 `);
 
 console.log(result);
