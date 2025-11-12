@@ -1,0 +1,16 @@
+[project]
+name = "worker"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "ccxt @ git+https://github.com/Drakkar-Software/ccxt.git@dk#subdirectory=python",
+    "webtypy>=0.1.7",
+]
+
+[dependency-groups]
+dev = [
+    "workers-py"
+]
+

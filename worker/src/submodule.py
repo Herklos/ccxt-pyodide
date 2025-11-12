@@ -1,7 +1,6 @@
 import json
 import time
 import asyncio
-import pyodide_http
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 
@@ -38,8 +37,6 @@ async def _fetch_ohlcv_async(exchange, symbol, timeframe, limit, async_ccxt=Fals
 _thread_executor = ThreadPoolExecutor(max_workers=3)
 
 async def _fetch_ohlcv_async_all(exchange_name, symbol, limit, async_ccxt=False):
-  pyodide_http.patch_all()
-
   if async_ccxt:
     import ccxt.async_support as ccxt
   else:
@@ -57,7 +54,7 @@ async def _fetch_ohlcv_async_all(exchange_name, symbol, limit, async_ccxt=False)
       _fetch_ohlcv_async(exchange, symbol, "1d", limit, async_ccxt)
   )
 
-exchange_name = globals().get("exchange_name", "kucoin")
-print(f"Fetching OHLCV for exchange: {exchange_name}")
-json.dumps(asyncio.run(_fetch_ohlcv_async_all(exchange_name, "BTC/USDT", 100, True),debug=False))
-
+async def get_ohlcv(exchange_name, symbol, limit, async_ccxt=False):
+    exchange_name = globals().get("exchange_name", "kucoin")
+    print(f"Fetching OHLCV for exchange: {exchange_name}")
+    return json.dumps(await _fetch_ohlcv_async_all(exchange_name, "BTC/USDT", 100, True),debug=False)

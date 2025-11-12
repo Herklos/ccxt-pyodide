@@ -4,12 +4,14 @@ import pythonCode from "./main.py" with { type: "text" };
 async function executeCode(exchangeName: string) {
   // Install ccxt dependencies
   const pyodide = await loadPyodide({
+    // indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/",
     packages: ["numpy", "micropip", "cryptography", "requests", "ssl", "aiohttp"],
   });
 
   // Install ccxt with dependencies
   await pyodide.runPythonAsync(`
     import micropip
+    await micropip.install("pyodide-http")
     await micropip.install("ccxt", deps=False)
   `);
 
