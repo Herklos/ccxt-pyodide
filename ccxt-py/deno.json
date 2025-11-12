@@ -1,6 +1,9 @@
 {
   "tasks": {
-    "dev": "deno run --watch main.ts"
+    "dev": "deno run --watch main.ts",
+    "bundle": "deno bundle --unstable-raw-imports -o app.js main.ts --minify",
+    "build": "deno run -A build.ts",
+    "compile": "deno compile -o main.wasm --target aarch64-apple-darwin main.ts"
   },
   "imports": {
     "@std/assert": "jsr:@std/assert@1"
